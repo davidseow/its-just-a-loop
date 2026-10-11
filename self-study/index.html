@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>It's Just a Loop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one slide at a time on a cool kitchen-tile ground; a mug in the top corner fills up as the harness grows */
+:root{
+  --bg:#ECEFF1; --surface:#FFFFFF; --ink:#18212B; --muted:#56626E; --line:#CDD5DB;
+  --accent:#0D6E6A; --accent-ink:#FFFFFF; --tea:#97561F; --tea-soft:#F1E2D3;
+  --warn:#A3261D; --ok:#2D7148;
+  --code-bg:#18212B; --code-fg:#E3EAF0; --code-dim:#8796A3; --code-hl:#26464E; --code-key:#7FD3CC; --code-str:#E8B07A;
+  --display:"Bricolage Grotesque","Arial Narrow",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1419; --surface:#18202A; --ink:#E5EAEF; --muted:#9AA6B1; --line:#2A3540;
+    --accent:#56C2BA; --accent-ink:#0F1419; --tea:#D79A5E; --tea-soft:#33251A;
+    --warn:#FF8F85; --ok:#7FD09C;
+    --code-bg:#0A0E12; --code-fg:#E3EAF0; --code-dim:#7D8B97; --code-hl:#1F3A40; --code-key:#7FD3CC; --code-str:#E8B07A;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1419; --surface:#18202A; --ink:#E5EAEF; --muted:#9AA6B1; --line:#2A3540;
+  --accent:#56C2BA; --accent-ink:#0F1419; --tea:#D79A5E; --tea-soft:#33251A;
+  --warn:#FF8F85; --ok:#7FD09C;
+  --code-bg:#0A0E12; --code-fg:#E3EAF0; --code-dim:#7D8B97; --code-hl:#1F3A40; --code-key:#7FD3CC; --code-str:#E8B07A;
+  color-scheme:dark;
+}
+
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:18px;line-height:1.5}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+.deck{height:100%;display:grid;grid-template-rows:auto 1fr auto;padding-inline:16px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:12px;max-width:1120px;width:100%;margin-inline:auto}
+.brand{font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--muted)}
+.meter{display:flex;align-items:center;gap:10px;min-width:0}
+.meter svg{width:44px;height:44px;flex:none}
+.meter-label{font-size:14px;color:var(--muted);text-align:right;max-width:26ch}
+.meter-label b{display:block;color:var(--ink);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+#teaFill{transition:y .5s ease,height .5s ease}
+#steam{transition:opacity .4s ease}
+
+main{overflow-y:auto;overflow-x:hidden;min-height:0}
+.slide{max-width:1120px;margin-inline:auto;padding-block:clamp(16px,4vh,48px) 32px;display:grid;gap:22px;align-content:start}
+.slide:focus{outline:none}
+.eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1,h2{font-family:var(--display);font-weight:800;line-height:1.02;margin:0;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:clamp(52px,10vw,124px)}
+h2{font-size:clamp(34px,5.4vw,64px)}
+p{margin:0;max-width:62ch}
+.lede{font-size:clamp(19px,2.2vw,24px);color:var(--muted);max-width:52ch}
+.lede strong{color:var(--ink)}
+.small{font-size:14px;color:var(--muted)}
+kbd{font-family:var(--mono);font-size:.85em;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;background:var(--surface)}
+
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:22px;align-items:start}
+.cols>*{min-width:0}
+
+/* code */
+pre.code{margin:0;background:var(--code-bg);color:var(--code-fg);font-family:var(--mono);font-size:clamp(13px,1.45vw,16px);line-height:1.7;border-radius:10px;padding:16px 0;overflow-x:auto}
+pre.code .ln{display:block;padding-inline:18px;white-space:pre;transition:background .25s}
+pre.code .ln.on{background:var(--code-hl);box-shadow:inset 3px 0 0 var(--code-key)}
+pre.code .ln[data-n]::before{content:attr(data-n);display:inline-block;width:2ch;margin-right:14px;color:var(--code-dim);text-align:right}
+.k{color:var(--code-key);font-weight:600}.s{color:var(--code-str)}.c{color:var(--code-dim);font-style:italic}
+
+/* model output panel */
+.out{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:grid;gap:8px}
+.out .who{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.out .said{font-style:italic}
+.verdict{font-family:var(--display);font-weight:800;font-size:clamp(22px,2.6vw,30px);color:var(--tea)}
+
+/* recipe card */
+.recipe{background:var(--surface);border:1px dashed var(--tea);border-radius:10px;padding:18px 20px;max-width:520px}
+.recipe h3{margin:0 0 8px;font-family:var(--display);font-size:20px}
+.recipe ol{margin:0;padding-left:22px}
+.recipe li+li{margin-top:4px}
+
+/* next-word bars */
+.guess{display:grid;gap:10px;max-width:620px}
+.prompt-line{font-family:var(--mono);font-size:clamp(16px,2vw,20px)}
+.prompt-line .blank{display:inline-block;min-width:5ch;border-bottom:3px solid var(--accent)}
+.bar-row{display:grid;grid-template-columns:11ch 1fr 5ch;gap:12px;align-items:center;font-variant-numeric:tabular-nums}
+.bar-row .track{height:14px;background:var(--line);border-radius:7px;overflow:hidden}
+.bar-row .fill{height:100%;background:var(--accent);border-radius:7px}
+.bar-row:first-of-type .fill{background:var(--tea)}
+
+/* flow diagram */
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.node{background:var(--surface);border:2px solid var(--line);border-radius:10px;padding:10px 14px;font-weight:700}
+.node small{display:block;font-weight:400;color:var(--muted);font-size:13px}
+.node.hl{border-color:var(--accent)}
+.arrow{font-family:var(--mono);font-size:13px;color:var(--muted);display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.arrow span:first-child{color:var(--ink)}
+.callout{border-left:4px solid var(--tea);padding:6px 0 6px 16px;font-size:clamp(18px,2vw,22px)}
+
+/* controls */
+.controls{display:flex;flex-wrap:wrap;gap:10px}
+.btn{border:2px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:8px 18px;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:var(--accent-ink)}
+
+/* loop log */
+.log{list-style:none;margin:0;padding:0;display:grid;gap:8px;min-height:120px}
+.log li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:baseline;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;animation:pop .25s ease}
+.log li .tag{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.log li.model .tag{background:var(--tea-soft);color:var(--tea)}
+.log li.harness .tag{background:var(--code-hl);color:var(--code-key)}
+.log li.stop .tag{background:var(--warn);color:var(--surface)}
+.log li .txt{font-family:var(--mono);font-size:14px;min-width:0;overflow-wrap:anywhere}
+.log .empty{color:var(--muted);font-style:italic;border-style:dashed;display:block}
+.lap{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.punch{font-family:var(--display);font-weight:800;font-size:clamp(28px,3.6vw,44px);color:var(--accent)}
+@keyframes pop{from{transform:translateY(4px);opacity:.3}to{transform:none;opacity:1}}
+
+/* context window */
+.ctx{display:grid;gap:14px}
+.ctx-row{display:grid;gap:6px}
+.ctx-row .lbl{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.window{display:flex;gap:6px;border:2px solid var(--ink);border-radius:10px;padding:6px;overflow:hidden;position:relative}
+.chip{flex:none;font-family:var(--mono);font-size:12.5px;padding:6px 9px;border-radius:6px;background:var(--surface);border:1px solid var(--line);white-space:nowrap}
+.chip.pref{background:var(--tea-soft);border-color:var(--tea);color:var(--tea);font-weight:600}
+.chip.gone{opacity:.35;text-decoration:line-through}
+.chip.sum{background:var(--code-hl);color:var(--code-key);border-color:transparent}
+.reply{font-style:italic}
+.reply.bad{color:var(--warn)}.reply.good{color:var(--ok)}
+
+/* permission dialog */
+.dialog{background:var(--surface);border:2px solid var(--ink);border-radius:14px;padding:20px;display:grid;gap:14px;max-width:460px;box-shadow:6px 6px 0 var(--line)}
+.dialog .t{font-size:13px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.dialog code{font-family:var(--mono);font-size:15px;background:var(--tea-soft);color:var(--tea);padding:2px 6px;border-radius:4px;overflow-wrap:anywhere}
+.btn.danger{background:var(--warn);border-color:var(--warn);color:var(--surface)}
+.result{min-height:3em;font-weight:700}
+
+/* kitchen diagram */
+.kitchen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:"a b c" "d core e" "f g h";gap:10px;max-width:760px}
+.kitchen .part{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px}
+.kitchen .part b{display:block;font-family:var(--display);font-size:18px}
+.kitchen .core{grid-area:core;background:var(--accent);color:var(--accent-ink);border-radius:50%;aspect-ratio:1;max-width:100%;display:grid;place-content:center;text-align:center;font-family:var(--mono);font-weight:600;font-size:15px;padding:10px}
+.kitchen .core span{display:block;font-family:var(--body);font-weight:400;font-size:13px}
+
+/* timeline */
+.timeline{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:12px;counter-reset:st}
+.timeline li{counter-increment:st;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:4px;align-content:start}
+.timeline li::before{content:counter(st);font-family:var(--display);font-weight:800;font-size:28px;line-height:1;color:var(--accent)}
+.timeline b{font-family:var(--display);font-size:20px}
+.timeline .era{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.timeline .cup{font-size:14px;color:var(--tea);font-weight:700}
+
+/* bottom bar + notes */
+.bar{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;padding-block:10px calc(10px + env(safe-area-inset-bottom,0px));max-width:1120px;width:100%;margin-inline:auto;border-top:1px solid var(--line)}
+.bar .progress{position:absolute;top:-1px;left:0;height:3px;background:var(--accent);transition:width .3s}
+.bar .count{font-variant-numeric:tabular-nums;min-width:7ch;text-align:center;color:var(--muted);font-size:15px}
+.bar .notes-btn{margin-left:auto}
+.bar .nav-spacer{margin-right:auto;width:84px}
+.notes{position:fixed;left:16px;right:16px;bottom:calc(72px + env(safe-area-inset-bottom,0px));max-width:760px;margin-inline:auto;background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:16px 20px;box-shadow:0 10px 30px rgba(0,0,0,.18);max-height:40vh;overflow:auto;z-index:5}
+.notes h3{margin:0 0 6px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.notes p{font-size:16px}
+
+@media (max-width:640px){
+  body{font-size:16px}
+  .meter-label{font-size:12px;max-width:16ch}
+  .kitchen{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"core core" "a b" "c d" "e f" "g h"}
+  .kitchen .core{aspect-ratio:auto;border-radius:12px;padding:16px}
+  .bar .nav-spacer{display:none}
+  .bar-row{grid-template-columns:9ch 1fr 4ch}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="deck">
+  <header class="top">
+    <span class="brand">It's Just a Loop</span>
+    <div class="meter" aria-live="polite">
+      <div class="meter-label"><b>Tea status</b><span id="teaLabel">Not yet requested</span></div>
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <defs><clipPath id="cupClip"><rect x="10" y="14" width="22" height="26" rx="3"/></clipPath></defs>
+        <g id="steam" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linecap="round" style="opacity:0">
+          <path d="M16 10c-2-2 2-4 0-7"/><path d="M22 10c-2-2 2-4 0-7"/><path d="M28 10c-2-2 2-4 0-7"/>
+        </g>
+        <rect id="teaFill" x="10" y="40" width="22" height="0" fill="var(--tea)" clip-path="url(#cupClip)"/>
+        <rect x="8" y="12" width="26" height="30" rx="4" fill="none" stroke="var(--ink)" stroke-width="2.5"/>
+        <path d="M34 18h4a5 5 0 0 1 0 10h-4" fill="none" stroke="var(--ink)" stroke-width="2.5"/>
+      </svg>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- 1 -->
+    <section class="slide" tabindex="-1" data-tea="0" data-tea-label="Not yet requested">
+      <div class="eyebrow">A ten-minute story about AI agents</div>
+      <h1>It's Just a Loop</h1>
+      <p class="lede">Your AI agent isn't magic. It's a brain in a jar, a kettle, and <strong>a while-loop with good manners.</strong></p>
+      <p class="small">Press <kbd>→</kbd> or <kbd>Space</kbd> to advance.</p>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide" tabindex="-1" hidden data-tea="0" data-tea-label="Requested. Nothing yet.">
+      <div class="eyebrow">The only job we'll do today</div>
+      <h2>"Make me a cup of tea."</h2>
+      <p class="lede">On every slide we ask for the same thing, and add <strong>one piece</strong> to the machine. Keep an eye on the mug in the top corner.</p>
+      <div class="recipe">
+        <h3>The spec</h3>
+        <ol>
+          <li>Boil the kettle.</li>
+          <li>Teabag in the mug.</li>
+          <li>Pour. Steep three to four minutes.</li>
+          <li>Splash of milk. <strong>No sugar.</strong></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section class="slide" tabindex="-1" hidden data-tea="0" data-tea-label="An essay about tea">
+      <div class="eyebrow">Stage 1 · The bare model</div>
+      <h2>A very clever brain in a jar.</h2>
+      <p class="lede">A language model reads text and writes text. That's all it does. <strong>No hands, no kettle, no clock.</strong></p>
+      <div class="cols">
+        <pre class="code"><code>reply = model("Make me a cup of tea")
+show(reply)</code></pre>
+        <div class="out">
+          <span class="who">The model replies</span>
+          <p class="said">"Tea (<i>Camellia sinensis</i>) has been enjoyed for thousands of years. The perfect cup begins with freshly drawn water, brought to a rolling boil…"</p>
+          <span class="small">[ 412 more words ]</span>
+        </div>
+      </div>
+      <p class="verdict">A lovely essay. Zero tea.</p>
+    </section>
+
+    <!-- 4 -->
+    <section class="slide" tabindex="-1" hidden data-tea="0" data-tea-label="Still just words">
+      <div class="eyebrow">What's inside the jar</div>
+      <h2>It guesses the next word. Then it does it again.</h2>
+      <p class="lede">At every step it scores the likely next pieces of text and picks one. It's autocomplete that has read most of the library: <strong>brilliant with words, useless with kettles.</strong></p>
+      <div class="guess">
+        <div class="prompt-line">Make me a cup of <span class="blank">&nbsp;</span></div>
+        <div class="bar-row"><span>tea</span><span class="track"><span class="fill" style="width:71%;display:block"></span></span><span>71%</span></div>
+        <div class="bar-row"><span>coffee</span><span class="track"><span class="fill" style="width:13%;display:block"></span></span><span>13%</span></div>
+        <div class="bar-row"><span>cocoa</span><span class="track"><span class="fill" style="width:6%;display:block"></span></span><span>6%</span></div>
+        <div class="bar-row"><span>Rosie Lee</span><span class="track"><span class="fill" style="width:2%;display:block"></span></span><span>2%</span></div>
+        <p class="small">Illustrative numbers. A real model scores tens of thousands of options at every step.</p>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section class="slide" tabindex="-1" hidden data-tea="0" data-tea-label="A polite essay about tea">
+      <div class="eyebrow">Stage 2 · Give it a label</div>
+      <h2>Tell it who it is.</h2>
+      <p class="lede">A <strong>system prompt</strong> is a note stuck on the jar before the chat starts. It sets the role, the tone and the rules. Meet Hobbs.</p>
+      <div class="cols">
+        <pre class="code"><code>reply = model(
+    system = "You are Hobbs, a helpful butler.",
+    user   = "Make me a cup of tea"
+)</code></pre>
+        <div class="out">
+          <span class="who">Hobbs replies</span>
+          <p class="said">"Certainly, sir. Permit me to describe a most splendid cup of tea…"</p>
+        </div>
+      </div>
+      <p class="verdict">Better manners. Same amount of tea.</p>
+    </section>
+
+    <!-- 6 -->
+    <section class="slide" tabindex="-1" hidden data-tea="15" data-tea-label="Kettle boiled. Nobody poured it.">
+      <div class="eyebrow">Stage 3 · Give it hands</div>
+      <h2>It can't hold a kettle. It can ask for one.</h2>
+      <p class="lede">We give the model a menu of <strong>tools</strong>. It replies with a request. Our own code, <strong>the harness</strong>, does the actual work and reports back.</p>
+      <div class="flow" aria-label="The model sends a request to the harness, which boils the kettle and reports back">
+        <div class="node">Hobbs<small>the model</small></div>
+        <div class="arrow"><span>boil_kettle()</span><span>→</span></div>
+        <div class="node hl">Harness<small>our code</small></div>
+        <div class="arrow"><span>switch on</span><span>→</span></div>
+        <div class="node">Kettle<small>the real world</small></div>
+        <div class="arrow"><span>"boiled"</span><span>↩</span></div>
+      </div>
+      <pre class="code"><code>tools = [boil_kettle, add_teabag, pour, wait, add_milk]
+reply = model(messages, tools)     # Hobbs: "CALL boil_kettle()"
+if reply.wants_tool:
+    result = run(reply.tool)       # the harness does this, not the model</code></pre>
+      <p class="callout">Then it stops. One request, one action, job abandoned. Hobbs boiled the kettle and went home.</p>
+    </section>
+
+    <!-- 7 -->
+    <section class="slide" tabindex="-1" hidden data-hook="loop" data-tea="15" data-tea-label="Kettle boiled. Nobody poured it.">
+      <div class="eyebrow">Stage 4 · The big idea</div>
+      <h2>Put it in a loop.</h2>
+      <p class="lede">Ask. Act. Show the model what happened. <strong>Ask again.</strong> Stop when the model says it's finished.</p>
+      <div class="cols">
+        <div style="display:grid;gap:12px;min-width:0">
+          <pre class="code" id="loopCode" data-numbered><code>messages = ["Make me a cup of tea"]
+while True:
+    reply = model(messages, tools)
+    if reply.is_done:
+        break
+    result = run(reply.tool)
+    messages.add(reply, result)
+show(reply)</code></pre>
+          <div class="controls">
+            <button class="btn" id="loopStep" type="button">Step</button>
+            <button class="btn ghost" id="loopPlay" type="button">Play all</button>
+            <button class="btn ghost" id="loopReset" type="button">Reset</button>
+          </div>
+        </div>
+        <div style="display:grid;gap:10px;min-width:0">
+          <div class="lap" id="loopLap">Lap 0</div>
+          <ul class="log" id="loopLog" aria-live="polite"><li class="empty">Press Step to run the loop one move at a time.</li></ul>
+          <p class="punch" id="loopPunch" hidden>That's it. That's the harness.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section class="slide" tabindex="-1" hidden data-hook="brakes" data-tea="100" data-tea-label="Cups made: 0">
+      <div class="eyebrow">Stage 5 · Brakes</div>
+      <h2>A loop with no brakes.</h2>
+      <p class="lede">The first wave of hobby agents (around 2023) looped freely. Some got the job done. Some wandered off <strong>with great confidence.</strong></p>
+      <div class="cols">
+        <div style="display:grid;gap:12px;min-width:0">
+          <pre class="code"><code>steps = 0
+while steps &lt; MAX_STEPS and spent &lt; budget:
+    reply = model(messages, tools)
+    if reply.is_done:
+        break
+    ...
+    steps += 1</code></pre>
+          <div class="controls">
+            <button class="btn ghost" id="brakeToggle" type="button" aria-pressed="false">Brakes: off</button>
+            <button class="btn" id="brakeRun" type="button">Run Hobbs</button>
+          </div>
+        </div>
+        <ul class="log" id="brakeLog" aria-live="polite"><li class="empty">Try it with brakes off, then on.</li></ul>
+      </div>
+    </section>
+
+    <!-- 9 -->
+    <section class="slide" tabindex="-1" hidden data-tea="100" data-tea-label="Tea made. Sugar correctly absent.">
+      <div class="eyebrow">Stage 6 · A notebook</div>
+      <h2>The jar only holds so much.</h2>
+      <p class="lede">Every lap, the model re-reads the whole conversation. That space is the <strong>context window</strong>, and it fills up. When it's full, the oldest things fall out. Things like <em>"no sugar"</em>.</p>
+      <div class="ctx">
+        <div class="ctx-row">
+          <span class="lbl">Without a notebook</span>
+          <div class="window">
+            <span class="chip pref gone">No sugar, please</span><span class="chip">boil_kettle()</span><span class="chip">boiled</span><span class="chip">add_teabag()</span><span class="chip">pour()</span><span class="chip">…190 more steps</span><span class="chip">add_milk()</span>
+          </div>
+          <span class="reply bad">Hobbs: "And two sugars, sir, as usual?"</span>
+        </div>
+        <div class="ctx-row">
+          <span class="lbl">With a notebook</span>
+          <div class="window">
+            <span class="chip pref">📌 No sugar. Ever.</span><span class="chip sum">Summary: 3 cups made, all fine</span><span class="chip">pour()</span><span class="chip">add_milk()</span>
+          </div>
+          <span class="reply good">Hobbs: "Your tea, sir. No sugar."</span>
+        </div>
+      </div>
+      <pre class="code"><code>if context.nearly_full():
+    old = context.oldest_steps()
+    context.replace(old, summarise(old))
+context.pin(memory.load("preferences"))   # "No sugar. Ever."</code></pre>
+    </section>
+
+    <!-- 10 -->
+    <section class="slide" tabindex="-1" hidden data-hook="bouncer" data-tea="100" data-tea-label="Tea made. Kettle at risk.">
+      <div class="eyebrow">Stage 7 · A bouncer</div>
+      <h2>Some requests need a human.</h2>
+      <p class="lede">The harness checks every request before running it. Safe ones go straight through. <strong>Risky ones wait for a yes.</strong></p>
+      <div class="cols">
+        <div class="dialog" role="group" aria-labelledby="dlgT">
+          <span class="t" id="dlgT">Permission needed</span>
+          <p>Hobbs wants to run<br><code>descale_kettle(with="bleach")</code></p>
+          <div class="controls">
+            <button class="btn danger" id="allowBtn" type="button">Allow</button>
+            <button class="btn ghost" id="denyBtn" type="button">Absolutely not</button>
+          </div>
+          <p class="result" id="dlgResult" aria-live="polite"></p>
+        </div>
+        <pre class="code"><code>if reply.tool.is_risky:
+    if not ask_human("Allow " + reply.tool.name + "?"):
+        result = "Refused by human"
+        continue
+result = run(reply.tool)</code></pre>
+      </div>
+      <p>The model can <em>ask</em> for anything. The harness decides what actually happens. That's why a lot of safety lives here, not only in the brain.</p>
+    </section>
+
+    <!-- 11 -->
+    <section class="slide" tabindex="-1" hidden data-tea="100" data-tea-label="Tea, biscuits and in-date milk">
+      <div class="eyebrow">Stage 8 · Today</div>
+      <h2>Same loop. Bigger kitchen.</h2>
+      <p class="lede">Today's agents read files, run code, browse the web and work for hours. Some send <strong>helpers</strong> off to do parts of the job, each running its own loop.</p>
+      <div class="kitchen">
+        <div class="part" style="grid-area:a"><b>Label</b>instructions</div>
+        <div class="part" style="grid-area:b"><b>Hands</b>tools &amp; apps</div>
+        <div class="part" style="grid-area:c"><b>Brakes</b>limits &amp; budgets</div>
+        <div class="part" style="grid-area:d"><b>Notebook</b>context &amp; memory</div>
+        <div class="core">while not done:<span>the same loop</span></div>
+        <div class="part" style="grid-area:e"><b>Bouncer</b>permissions</div>
+        <div class="part" style="grid-area:f"><b>Helpers</b>sub-agents</div>
+        <div class="part" style="grid-area:g"><b>Sandbox</b>a safe kitchen</div>
+        <div class="part" style="grid-area:h"><b>Checks</b>tests &amp; review</div>
+      </div>
+      <pre class="code"><code>biscuits = spawn_helper("Find biscuits. Not the dry ones.")
+milk     = spawn_helper("Check the milk is in date.")
+wait_for(biscuits, milk)                      # loops all the way down</code></pre>
+    </section>
+
+    <!-- 12 -->
+    <section class="slide" tabindex="-1" hidden data-tea="100" data-tea-label="Tea and biscuits served">
+      <div class="eyebrow">The whole story on one slide</div>
+      <h2>How the jar grew a kitchen.</h2>
+      <ol class="timeline">
+        <li><b>Brain in a jar</b>Models that write text<span class="era">about 2020–22</span><span class="cup">An essay about tea</span></li>
+        <li><b>Label</b>System prompts and chat<span class="era">about 2022–23</span><span class="cup">A polite essay</span></li>
+        <li><b>Hands</b>Tool calling<span class="era">about 2023</span><span class="cup">Kettle boiled</span></li>
+        <li><b>Loop</b>Act, observe, repeat<span class="era">about 2022–23</span><span class="cup">A cup of tea</span></li>
+        <li><b>Brakes</b>Step limits and budgets<span class="era">2023 onwards</span><span class="cup">One cup, not 400</span></li>
+        <li><b>Notebook</b>Context and memory<span class="era">2024 onwards</span><span class="cup">"No sugar" remembered</span></li>
+        <li><b>Bouncer</b>Permissions and sandboxes<span class="era">2024 onwards</span><span class="cup">No bleach</span></li>
+        <li><b>Helpers</b>Sub-agents, long jobs<span class="era">2025 onwards</span><span class="cup">Tea and biscuits</span></li>
+      </ol>
+      <p class="small">Dates are rough and the stages overlapped. The order of ideas matters more than the years.</p>
+    </section>
+
+    <!-- 13 -->
+    <section class="slide" tabindex="-1" hidden data-tea="100" data-tea-label="Tea served. Cheers.">
+      <div class="eyebrow">Take this home</div>
+      <h2>The model is the brain. The harness is everything else.</h2>
+      <pre class="code"><code>messages = [instructions, request]                # label
+steps = 0
+while steps &lt; MAX_STEPS:                           # loop + brakes
+    reply = model(messages, tools)                 # brain
+    if reply.is_done:
+        return reply
+    if reply.tool.is_risky and not ask_human(reply.tool):
+        result = "Refused by human"                # bouncer
+    else:
+        result = run(reply.tool)                   # hands
+    messages = tidy(messages + [reply, result])    # notebook
+    steps += 1</code></pre>
+      <p class="lede">A lot of recent progress in AI agents is in the kitchen, <strong>not just the brain.</strong> Next time someone says "agent", picture Hobbs and the loop.</p>
+    </section>
+
+  </main>
+
+  <nav class="bar" aria-label="Slide navigation">
+    <span class="progress" id="progress"></span>
+    <span class="nav-spacer"></span>
+    <button class="btn ghost" id="prev" type="button" aria-label="Previous slide">←</button>
+    <span class="count" id="count">1 / 13</span>
+    <button class="btn" id="next" type="button" aria-label="Next slide">→</button>
+  </nav>
+</div>
+
+<script>
+(function(){
+  /* ---------- tiny pseudo-code highlighter ---------- */
+  const KW=/("[^"]*")|(#.*$)|\b(while|if|not|and|or|break|return|continue|else|True|for|in)\b/g;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  document.querySelectorAll('pre.code').forEach(pre=>{
+    const code=pre.querySelector('code');
+    const lines=code.textContent.replace(/^\n|\n$/g,'').split('\n');
+    const numbered=pre.hasAttribute('data-numbered');
+    code.innerHTML=lines.map((l,i)=>{
+      const h=esc(l).replace(KW,(m,s,c,k)=>s?'<span class="s">'+s+'</span>':c?'<span class="c">'+c+'</span>':'<span class="k">'+k+'</span>');
+      return '<span class="ln"'+(numbered?' data-n="'+(i+1)+'"':'')+'>'+(h||' ')+'</span>';
+    }).join('');
+  });
+
+  /* ---------- tea meter ---------- */
+  const fill=document.getElementById('teaFill'), steam=document.getElementById('steam'), label=document.getElementById('teaLabel');
+  function setTea(pct,text){
+    const h=26*Math.max(0,Math.min(100,pct))/100;
+    fill.setAttribute('y',40-h); fill.setAttribute('height',h);
+    steam.style.opacity=pct>=100?1:0;
+    if(text!=null) label.textContent=text;
+  }
+
+  /* ---------- deck navigation ---------- */
+  const slides=[...document.querySelectorAll('.slide')];
+  const main=document.getElementById('main'), count=document.getElementById('count'), progress=document.getElementById('progress');
+    let cur=0;
+  const hooks={};
+  function go(i){
+    i=Math.max(0,Math.min(slides.length-1,i));
+    if(slides[cur].dataset.hook && hooks[slides[cur].dataset.hook]) hooks[slides[cur].dataset.hook].leave();
+    cur=i;
+    slides.forEach((s,j)=>{s.hidden=j!==i;});
+    const s=slides[i];
+    count.textContent=(i+1)+' / '+slides.length;
+    progress.style.width=((i+1)/slides.length*100)+'%';
+    setTea(+s.dataset.tea||0,s.dataset.teaLabel);
+    if(s.dataset.hook && hooks[s.dataset.hook]) hooks[s.dataset.hook].enter();
+    main.scrollTop=0;
+    try{history.replaceState(null,'','#s'+(i+1));}catch(e){}
+  }
+  document.getElementById('prev').addEventListener('click',()=>go(cur-1));
+  document.getElementById('next').addEventListener('click',()=>go(cur+1));
+  function toggleNotes(){}
+  document.addEventListener('keydown',e=>{
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    const onBtn=e.target.closest&&e.target.closest('button');
+    if(e.key==='ArrowRight'||e.key==='PageDown'||(e.key===' '&&!onBtn)){e.preventDefault();go(cur+1);}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(cur-1);}
+    else if(e.key==='Home'){go(0);} else if(e.key==='End'){go(slides.length-1);}
+    else if(e.key==='n'||e.key==='N'||e.key==='?'){toggleNotes();}
+  });
+  let tx=null,ty=null;
+  main.addEventListener('touchstart',e=>{if(e.target.closest('pre,.window')){tx=null;return;}tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+  main.addEventListener('touchend',e=>{if(tx==null)return;const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;if(Math.abs(dx)>60&&Math.abs(dy)<40)go(cur+(dx<0?1:-1));tx=null;},{passive:true});
+
+  function addLog(ul,cls,tag,txt){
+    const e=ul.querySelector('.empty'); if(e) e.remove();
+    const li=document.createElement('li'); li.className=cls;
+    li.innerHTML='<span class="tag"></span><span class="txt"></span>';
+    li.children[0].textContent=tag; li.children[1].textContent=txt;
+    ul.appendChild(li);
+  }
+  function resetLog(ul,msg){ul.innerHTML='<li class="empty"></li>';ul.firstChild.textContent=msg;}
+
+  /* ---------- slide 7: the loop ---------- */
+  const LOOP=[
+    {who:'model',lines:[3],say:'CALL boil_kettle()'},
+    {who:'harness',lines:[6,7],say:'Kettle boiled. 100°C.',tea:15,lab:'Kettle boiled'},
+    {who:'model',lines:[3],say:'CALL add_teabag(mug)'},
+    {who:'harness',lines:[6,7],say:'Teabag in mug.',tea:30,lab:'Teabag in mug'},
+    {who:'model',lines:[3],say:'CALL pour(kettle, mug)'},
+    {who:'harness',lines:[6,7],say:'Mug full. Colour: pale and sad.',tea:60,lab:'Pale and sad'},
+    {who:'model',lines:[3],say:'CALL wait(minutes=3)'},
+    {who:'harness',lines:[6,7],say:'Colour: proper builder\'s.',tea:80,lab:'Proper builder\'s'},
+    {who:'model',lines:[3],say:'CALL add_milk(amount="splash")'},
+    {who:'harness',lines:[6,7],say:'Colour: just right. Sugar: none.',tea:95,lab:'Nearly there'},
+    {who:'model',lines:[3,4],say:'DONE: "Your tea, sir."'},
+    {who:'harness',lines:[5,8],say:'Loop ends. Tea handed over.',tea:100,lab:'Tea served by a loop'}
+  ];
+  const loopLog=document.getElementById('loopLog'), loopLap=document.getElementById('loopLap'), loopPunch=document.getElementById('loopPunch');
+  const loopLines=[...document.querySelectorAll('#loopCode .ln')];
+  const stepBtn=document.getElementById('loopStep'), playBtn=document.getElementById('loopPlay');
+  let k=0, timer=null;
+  function hl(lines){loopLines.forEach((l,i)=>l.classList.toggle('on',lines.includes(i+1)));}
+  function loopStep(){
+    if(k>=LOOP.length){stopPlay();return;}
+    const s=LOOP[k++];
+    hl(s.lines);
+    addLog(loopLog,s.who,s.who==='model'?'Hobbs':'Harness',s.say);
+    loopLap.textContent='Lap '+Math.ceil(k/2);
+    if(s.tea!=null) setTea(s.tea,s.lab);
+    if(k>=LOOP.length){loopPunch.hidden=false;stepBtn.disabled=true;playBtn.disabled=true;stopPlay();}
+  }
+  function stopPlay(){clearInterval(timer);timer=null;playBtn.textContent='Play all';}
+  function loopReset(){stopPlay();k=0;hl([]);resetLog(loopLog,'Press Step to run the loop one move at a time.');loopLap.textContent='Lap 0';loopPunch.hidden=true;stepBtn.disabled=false;playBtn.disabled=false;setTea(15,'Kettle boiled. Nobody poured it.');}
+  stepBtn.addEventListener('click',()=>{stopPlay();loopStep();});
+  playBtn.addEventListener('click',()=>{if(timer){stopPlay();return;}playBtn.textContent='Pause';loopStep();timer=setInterval(loopStep,1100);});
+  document.getElementById('loopReset').addEventListener('click',loopReset);
+  hooks.loop={enter(){ if(k>0){const last=[...LOOP.slice(0,k)].reverse().find(s=>s.tea!=null); if(last) setTea(last.tea,last.lab);} },leave(){stopPlay();}};
+
+  /* ---------- slide 8: brakes ---------- */
+  const WILD=[
+    ['Made a cup of tea.',1],['Made another, just in case.',2],['Made tea for the neighbours.',9],
+    ['Ordered a bigger kettle.',9],['Registered Hobbs Tea Ltd.',9],['Wrote a five-year plan for tea.',9],
+    ['Hired a butler to supervise the butler.',40],['Opened a second branch in Leeds.',170],['Still going. Cups made: 400.',400]
+  ];
+  const brakeLog=document.getElementById('brakeLog'), brakeBtn=document.getElementById('brakeToggle'), runBtn=document.getElementById('brakeRun');
+  let brakes=false, bt=null;
+  brakeBtn.addEventListener('click',()=>{brakes=!brakes;brakeBtn.setAttribute('aria-pressed',String(brakes));brakeBtn.textContent=brakes?'Brakes: on (MAX_STEPS = 3)':'Brakes: off';});
+  function brakeStop(){clearTimeout(bt);bt=null;runBtn.disabled=false;}
+  runBtn.addEventListener('click',()=>{
+    resetLog(brakeLog,'');brakeLog.innerHTML='';runBtn.disabled=true;
+    const limit=brakes?3:WILD.length; let i=0;
+    (function tick(){
+      if(i<limit){const [t,c]=WILD[i++];addLog(brakeLog,'model','Step '+i,t);setTea(100,'Cups made: '+c);bt=setTimeout(tick,brakes?700:520);}
+      else{ if(brakes) addLog(brakeLog,'stop','Stopped','MAX_STEPS reached. Budget intact. Leeds spared.'); brakeStop(); }
+    })();
+  });
+  hooks.brakes={enter(){},leave(){brakeStop();}};
+
+  /* ---------- slide 10: bouncer ---------- */
+  const res=document.getElementById('dlgResult');
+  document.getElementById('allowBtn').addEventListener('click',()=>{res.style.color='var(--warn)';res.textContent='Kettle descaled. Tea now tastes of swimming pool.';setTea(100,'Tea ruined. Lesson learnt.');});
+  document.getElementById('denyBtn').addEventListener('click',()=>{res.style.color='var(--ok)';res.textContent='Refused. Hobbs suggests vinegar instead. Good Hobbs.';setTea(100,'Tea safe. Kettle safe.');});
+  hooks.bouncer={enter(){res.textContent='';},leave(){}};
+
+  /* ---------- start ---------- */
+  const m=/^#s(\d+)$/.exec(location.hash||'');
+  go(m?(+m[1]-1):0);
+})();
+</script>
+</body>
+</html>
